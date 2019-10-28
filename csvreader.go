@@ -4,7 +4,9 @@ import (
 	"encoding/csv"
 	"errors"
 	"github.com/axgle/mahonia"
+	"golang.org/x/net/html/charset"
 	"os"
+	"strings"
 )
 
 func ReadCsv(filePath string, encodeing string, cols *[]string, totalCount *int, rowAction func(row []string)) error {
@@ -14,12 +16,20 @@ func ReadCsv(filePath string, encodeing string, cols *[]string, totalCount *int,
 	}
 	defer f.Close()
 	var reader *csv.Reader
-	if encodeing != "" {
-		decoder := mahonia.NewDecoder(encodeing)
-		reader = csv.NewReader(decoder.NewReader(f))
-	} else {
-		reader = csv.NewReader(f)
+	if encodeing == "" {
+		//auto detect csv file charset
+		content := make([]byte, 128, 128)
+		_, err = f.Read(content)
+		if err != nil {
+			return err
+		}
+		_, encodeing, _ = charset.DetermineEncoding(content, "text/csv")
+		f.Seek(0, 0)
+
 	}
+
+	decoder := mahonia.NewDecoder(encodeing)
+	reader = csv.NewReader(decoder.NewReader(f))
 
 	reader.Comment = '#'
 
@@ -30,6 +40,7 @@ func ReadCsv(filePath string, encodeing string, cols *[]string, totalCount *int,
 	r := len(data) - 1
 	*totalCount = r
 	if r > 0 {
+		data[0][0] = strings.ReplaceAll(data[0][0], "\ufeff", "") //utf8-bom
 		m, err := checkCol1(cols, &data[0])
 		if err != nil {
 			return err
