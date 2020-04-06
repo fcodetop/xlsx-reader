@@ -2,22 +2,15 @@ xlxs-reader
 =====
 A fast and lightweight .xlxs or .csv file reader library implemented in Go.
 
-Benchmark 
--------------
-Compare with 360EntSecGroup-Skylar/excelize
+一个避免OOM kill的excel读取go的实现
 
-ReportAllocs
+升级了2.0 版本，最终实现低内存并且快速读取.xlxs 文件。
 
-pkg: 360EntSecGroup-Skylar/excelize
+但是比较耗CPU - -!
 
--4   	       1	82881214900 ns/op	28014865832 B/op 388529945 allocs/op
+去掉原来的csv文件读取支持
 
-pkg:xlsx_reader
-
--4   	       1	24557851000 ns/op	5508685240 B/op	 155412463 allocs/op
-
-
-example
+example 示例
 -------
 
     package main
@@ -25,15 +18,20 @@ example
 	import "github.com/fcode/xlxs_reader"
 	func main(){
         file:=`./myexcel.xlsx` //excel file path
-        sheetName:="Sheet1"
-        cols:=[]string{"colName1","colName2","colName3","..."}
-        c:=new(int) //total count
-        var i int //current index
-        err:=ReadExcel(file,sheetName,&cols,c, func(row []string) {
-            //
-            i++
-            fmt.Printf("processing %v/%v %v\n",i,*c,row)
-        })
+        sheetName:="Sheet1" // zero value,will read the first sheet
+        r := Reader(file, sheetName,true) //new a xlxs-reader
+        	cols,err:= r.Open()
+        	defer r.Close() //reader must be close
+        	if(err!=nil){
+        		t.Error(err)
+        	}
+        	fmt.Printf("%v\n", cols)
+        	// rowCount:=r.GetRowCount() //get total rowcount if need        	
+        	err = r.FetchRow(func(row []string) error {
+        		fmt.Printf("%v\n", row)
+        		return nil  //retrun an err will break fetch
+        	})
+       
 	}
 	
 See the go test for more "# xlsx-reader" 
