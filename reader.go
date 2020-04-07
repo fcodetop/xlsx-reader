@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"math"
 	"regexp"
@@ -19,12 +18,16 @@ type Policy int
 const (
 	LowMemery = Policy(0) //时间复杂度O(n^2) 空间复杂度O(1)
 	Fast      = Policy(1) //时间复杂度O（n） 空间复杂度O(n)
+
 )
 
 var (
-	tFlag   = []byte("</t>")
-	rowFlag = []byte("</row>")
-	colR    = regexp.MustCompile(`\d+$`)
+	tFlag        = []byte("</t>")
+	rowFlag      = []byte("</row>")
+	colR         = regexp.MustCompile(`\d+$`)
+	ErrFileType  = errors.New("File type must be xlsx")
+	ErrSheetName = errors.New("Could not find specific sheet")
+	ErrCols      = errors.New("First row does not match Cols")
 )
 
 type reader struct {
@@ -40,6 +43,8 @@ type reader struct {
 	sheetReader     io.ReadCloser
 	sheetXmlDecoder *xml.Decoder
 	cols            []string //firstRowIsCol 为true 时 获取到的列表集合
+	columnMaps      map[int]int
+	maxIndex        int
 
 	stringCache []string //Fast策略string缓存
 
@@ -70,7 +75,7 @@ func newReader(fileName, sheetName string, firstRowIsCol bool, policy Policy) *r
 //todo 处理列名为空的列
 func (this *reader) Open() (cols []string, err error) {
 	if !strings.HasSuffix(strings.ToLower(this.fileName), ".xlsx") {
-		return nil, errors.New("不支持的文件格式.")
+		return nil, ErrFileType
 	}
 	this.reader, err = zip.OpenReader(this.fileName)
 	if err != nil {
@@ -96,7 +101,7 @@ func (this *reader) Open() (cols []string, err error) {
 	}
 	sName := this.getSheetPath(workbook, bookrel)
 	if sName == "" {
-		err = fmt.Errorf("导入的xlsx不包含名为:%v的表格", this.sheetName)
+		err = ErrSheetName
 		return
 	}
 	//得到工作表和字符串存储的xml
@@ -164,8 +169,56 @@ func (this *reader) Open() (cols []string, err error) {
 			}
 		}
 		this.cols = cols
+		this.columnMaps = make(map[int]int, len(cols))
+		for i := 0; i < len(cols); i++ {
+			this.columnMaps[i] = i
+		}
+		this.maxIndex = len(cols) - 1
 	}
 	return
+}
+
+//打开要读取的工作表，并根据输入的cols校验excel模板是否正确
+//firstRowIsCol 参数必须为true
+func (this *reader) OpenAndValidCols(cols []string) error {
+	if !this.firstRowIsCol {
+		return errors.New("firstRowIsCol must be true")
+	}
+	if _, err := this.Open(); err != nil {
+		return err
+	}
+	if err := this.checkCols(cols); err != nil {
+		return err
+	}
+	this.cols = cols
+	return nil
+}
+
+func (this *reader) checkCols(cols []string) error {
+	l := len(cols)
+	if l > len(this.cols) {
+		return ErrCols
+	}
+	this.columnMaps = make(map[int]int, l)
+	var isFound bool
+	for i, v := range cols {
+		isFound = false
+		for j, c := range this.cols {
+			if v == c {
+				this.columnMaps[j] = i
+				if this.maxIndex < j {
+					this.maxIndex = j
+				}
+				isFound = true
+				break
+			}
+		}
+		//第一行中不包含传入的列
+		if !isFound {
+			return ErrCols
+		}
+	}
+	return nil
 }
 
 func (this *reader) Close() error {
@@ -183,8 +236,8 @@ func (this *reader) FetchRow(rowAction func(row []string) error) (err error) {
 	//解析工作表，这里如果全量解析内部使用递归算法，所以只能逐行解析，避免OOM kill
 	//flag: 0 ignore,1 elementStart, 2 elementEnd
 	var rowFlag, valueFlag int8
-	var prevColIndex, colIndex int
-	var isString bool
+	var prevColIndex, colIndex, realIndex int
+	var isString, ok bool
 	var row []string
 	//逐行读取sheet
 loop:
@@ -214,7 +267,7 @@ loop:
 						} else if v.Name.Local == "r" {
 							colIndex = getIndex(v.Value)
 							//忽略超过指定列的数据
-							if this.firstRowIsCol && colIndex >= len(this.cols) {
+							if this.firstRowIsCol && colIndex > this.maxIndex {
 								rowFlag = 0
 							}
 						}
@@ -238,6 +291,11 @@ loop:
 			}
 		case xml.CharData:
 			if valueFlag == 1 {
+				if this.firstRowIsCol {
+					if realIndex, ok = this.columnMaps[colIndex]; !ok {
+						break
+					}
+				}
 				value := string([]byte(token))
 				if isString {
 					i, _ := strconv.Atoi(value)
@@ -248,7 +306,7 @@ loop:
 					}
 				}
 				if this.firstRowIsCol {
-					row[colIndex] = value
+					row[realIndex] = value
 				} else {
 					for i := prevColIndex; i <= colIndex; i++ {
 						if i == colIndex {
@@ -256,7 +314,6 @@ loop:
 						} else {
 							row = append(row, "")
 						}
-
 					}
 				}
 			}

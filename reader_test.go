@@ -49,6 +49,31 @@ func TestReader_ReadExlsLowM(t *testing.T) {
 	}
 }
 
+func TestReader_OpenAndValidCols(t *testing.T) {
+
+	file := `E:\testfiles\test300k.xlsx`
+
+	r := Reader(file, "", true)
+	cols := []string{"真实姓名", "*手机号码", "会员昵称", "性别", "出生日期", "备注说明",
+		"积分有效期", "婚姻状况"}
+	err := r.OpenAndValidCols(cols)
+	defer r.Close()
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(cols)
+	err = r.FetchRow(func(row []string) error {
+		fmt.Printf("%v\n", row)
+		return nil
+	})
+	mem := runtime.MemStats{}
+	runtime.ReadMemStats(&mem)
+	t.Logf("TotalAlloc=%vMB", mem.TotalAlloc/1024/1024)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 func TestReader_GetRowCount(t *testing.T) {
 	file := `E:\testfiles\test300k.xlsx`
 

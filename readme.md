@@ -20,10 +20,15 @@ example 示例
         file:=`./myexcel.xlsx` //excel file path
         sheetName:="Sheet1" // zero value,will read the first sheet
         r := Reader(file, sheetName,true) //new a xlxs-reader
-        	cols,err:= r.Open()
+        cols,err:= r.Open() 
+        
+        //or defined columns and validate them
+        //cols:=[]string{"colName1","colName2","colName3","..."}
+        //err:=r.OpenAndValidCols(cols)   
+        	
         	defer r.Close() //reader must be close
         	if(err!=nil){
-        		t.Error(err)
+        		return
         	}
         	fmt.Printf("%v\n", cols)
         	// rowCount:=r.GetRowCount() //get total rowcount if need        	
