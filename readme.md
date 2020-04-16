@@ -15,7 +15,7 @@ example 示例
 
     package main
 	import "fmt"
-	import "github.com/fcode/xlxs_reader"
+	import "github.com/fcodetop/xlxs_reader"
 	func main(){
         file:=`./myexcel.xlsx` //excel file path
         sheetName:="Sheet1" // zero value,will read the first sheet
