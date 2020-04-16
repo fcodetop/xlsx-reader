@@ -31,9 +31,15 @@ example 示例
         		return
         	}
         	fmt.Printf("%v\n", cols)
-        	// rowCount:=r.GetRowCount() //get total rowcount if need        	
+        	// rowCount,err:=r.GetRowCount() //get total rowcount if need        	
         	err = r.FetchRow(func(row []string) error {
         		fmt.Printf("%v\n", row)
+        		d:= row[1] //datetime column
+        		//convert excel float value to datetime value
+                if  v,err:= strconv.ParseFloat(d,64); err == nil {
+                	t:= GetExcelTime(v,true)
+                	print(t)
+                } 
         		return nil  //retrun an err will break fetch
         	})
        

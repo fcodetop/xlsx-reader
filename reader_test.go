@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
+	"strconv"
 	"testing"
 )
 
@@ -64,6 +65,11 @@ func TestReader_OpenAndValidCols(t *testing.T) {
 	t.Log(cols)
 	err = r.FetchRow(func(row []string) error {
 		fmt.Printf("%v\n", row)
+		d := row[4]
+		if v, err := strconv.ParseFloat(d, 64); err == nil {
+			t := GetExcelTime(v, true)
+			print(t)
+		}
 		return nil
 	})
 	mem := runtime.MemStats{}
