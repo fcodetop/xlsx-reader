@@ -228,7 +228,10 @@ func (this *reader) Close() error {
 	if this.sheetReader != nil {
 		this.sheetReader.Close()
 	}
-	return this.reader.Close()
+	if this.reader != nil {
+		return this.reader.Close()
+	}
+	return nil
 }
 
 //逐行读取，如果rowAction中返回 err!=nil 则中断
