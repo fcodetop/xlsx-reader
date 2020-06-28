@@ -68,7 +68,7 @@ func TestReader_OpenAndValidCols(t *testing.T) {
 		d := row[4]
 		if v, err := strconv.ParseFloat(d, 64); err == nil {
 			t := GetExcelTime(v, true)
-			print(t)
+			fmt.Print(t)
 		}
 		return nil
 	})
@@ -79,7 +79,34 @@ func TestReader_OpenAndValidCols(t *testing.T) {
 		t.Error(err)
 	}
 }
+func TestReader_OpenAndValidCols1(t *testing.T) {
 
+	file := `F:\Users\Administrator\Desktop\excel\11111.xlsx`
+
+	r := Reader(file, "", true)
+	cols := []string{"*手机", "姓名", "性别", "生日"}
+	err := r.OpenAndValidCols(cols)
+	defer r.Close()
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(cols)
+	err = r.FetchRow(func(row []string) error {
+		fmt.Printf("%v\n", row)
+		d := row[0]
+		if v, err := strconv.ParseFloat(d, 64); err == nil {
+			t := GetExcelTime(v, true)
+			fmt.Print(t)
+		}
+		return nil
+	})
+	mem := runtime.MemStats{}
+	runtime.ReadMemStats(&mem)
+	t.Logf("TotalAlloc=%vMB", mem.TotalAlloc/1024/1024)
+	if err != nil {
+		t.Error(err)
+	}
+}
 func TestReader_GetRowCount(t *testing.T) {
 	file := `E:\testfiles\test300k.xlsx`
 

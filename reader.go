@@ -492,13 +492,20 @@ loop:
 		case xml.StartElement:
 			name := token.Name.Local
 			if name == "sst" {
+				var count, uniqueCount int = 0, -1
 				for _, v := range token.Attr {
+					if v.Name.Local == "count" {
+						count, _ = strconv.Atoi(v.Value)
+					}
 					if v.Name.Local == "uniqueCount" {
-						c, _ := strconv.Atoi(v.Value)
-						this.stringCache = make([]string, c)
+						uniqueCount, _ = strconv.Atoi(v.Value)
 						break
 					}
 				}
+				if uniqueCount == -1 {
+					uniqueCount = count
+				}
+				this.stringCache = make([]string, uniqueCount)
 			} else if name == "t" {
 				valueFlag = 1
 			}
