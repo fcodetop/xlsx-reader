@@ -506,20 +506,21 @@ loop:
 					uniqueCount = count
 				}
 				this.stringCache = make([]string, uniqueCount)
-			} else if name == "t" {
+			} else if name == "si" {
 				valueFlag = 1
 			}
 		case xml.EndElement:
 			name := token.Name.Local
-			if name == "t" {
+			if name == "si" {
 				valueFlag = 2
+				println(this.stringCache[index])
 				index++
 			} else if name == "sst" {
 				break loop
 			}
 		case xml.CharData:
 			if valueFlag == 1 {
-				this.stringCache[index] = string([]byte(token))
+				this.stringCache[index] = this.stringCache[index] + string([]byte(token))
 			}
 		}
 	}
