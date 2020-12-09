@@ -1,6 +1,6 @@
 xlxs-reader
 =====
-A fast and lightweight .xlxs or .csv file reader library implemented in Go.
+A fast and lightweight .xlxs file reader library implemented in Go.
 
 一个避免OOM kill的excel读取go的实现
 
