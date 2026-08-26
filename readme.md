@@ -1,3 +1,5 @@
+
+
 xlxs-reader
 =====
 A fast and lightweight .xlxs file reader library implemented in Go.
@@ -15,7 +17,7 @@ example 示例
 
     package main
 	import "fmt"
-	import "github.com/fcodetop/xlxs_reader"
+	import "github.com/fcodetop/xlsx-reader"
 	func main(){
         file:=`./myexcel.xlsx` //excel file path
         sheetName:="Sheet1" // zero value,will read the first sheet
@@ -25,7 +27,8 @@ example 示例
         //or defined columns and validate them
         //cols:=[]string{"colName1","colName2","colName3","..."}
         //err:=r.OpenAndValidCols(cols)   
-        	
+
+
         	defer r.Close() //reader must be close
         	if(err!=nil){
         		return
@@ -45,4 +48,4 @@ example 示例
        
 	}
 	
-See the go test for more "# xlsx-reader" 
+See the go test for more "# xlsx-reader"
